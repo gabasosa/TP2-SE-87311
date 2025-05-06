@@ -22,10 +22,6 @@
 
 &emsp;El sistema funciona de forma autónoma y ligada a una **máquina de estados finitos (FSM)** que evalúa periódicamente los sensores conectados. Además, el/la usuario/a puede configurar umbrales de temperatura y humedad, visualizar el estado actual, consultar registros y configurar el reloj interno (RTC) desde un menú interactivo.
 
-&emsp;La interacción se realiza a través de un **teclado matricial 4x4** y un **display gráfico TFT ILI9341**, con salida UART para depuración.
-
-
-
 ---
 
 ## Variables controladas
@@ -50,7 +46,7 @@
 | `TP2-SE-87311/modules/menu/`       | Menú de usuario (TFT + keypad)                               |
 | `TP2-SE-87311/modules/display/`    | Funciones gráficas para el display ILI9341                   |
 | `TP2-SE-87311/modules/events/`     | Registro de eventos con timestamp                            |
-| `TP2-SE-87311/modules/sensors/`    | Interfaces con el DHT22 y el RTC DS3231                      |
+| `TP2-SE-87311/modules/sensors/`    | Interfaces con el DHT22                                      |
 | `TP2-SE-87311/modules/actuators/`  | Control de humidificador, cooler, ventilador y servos        |
 | `main.cpp`        | Lazo principal y configuración del sistema                   |
 
@@ -71,17 +67,20 @@ El sistema implementa una **FSM** que evalúa las condiciones cada 2 s y actú
 
 &emsp;La duración de cada estado es fija, y se retorna automáticamente a `STAND_BY` tras cumplido el tiempo.
 
-&emsp;El siguiente diagrama fue confeccionado con el software en la nube <a href="https://www.itemis.com/en/products/itemis-create/><Itemis Create></a>:
+&emsp;El siguiente diagrama fue confeccionado con el software en la nube <a href="https://www.itemis.com/en/products/itemis-create/">**Itemis Create**</a>:
 
 ![alt text](media/FSM.png)
 ---
 
 > **NOTA**: varias de las variables que pueden visualizarse en este no compareten el mismo nombre que en el código fuente.
 
-### Interfaz de Usuario
+### Interfaz
 
-&emsp;La interacción se realiza mediante un **menú gráfico** en el display TFT. Las opciones son seleccionadas con el teclado matricial.
+&emsp;La interacción con el sistema se realiza a través de:
 
+| **Display gráfico TFT ILI9341** | Permite al usuario visualizar las opciones del sistema. |
+| **Teclado matricial 4x4** | Permite al usuario interactuar con la interfaz gráfica. |
+| **Salida UART** | Permite a los desarrolladores depurar el sistema. |
 
 #### Menú principal:
 
