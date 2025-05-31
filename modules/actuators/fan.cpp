@@ -2,7 +2,7 @@
 #include "mbed.h"
 #include "config/pin_map.h"
 
-static DigitalOut fanControl(FAN_CONTROL_PIN);
+static DigitalOut fanControl(FAN_RELAY_PIN);
 static DigitalOut fanLEDIndicator(FAN_LED_INDICATOR);
 
 void Fan_Init() {

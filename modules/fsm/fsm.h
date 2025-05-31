@@ -1,7 +1,7 @@
 #ifndef _FSM_H_
 #define _FSM_H_
 
-#include "state_defs.h"
+#include "fsm/state_defs.h"
 
 extern int tempThresholdUpper;
 extern int humThresholdLower;
