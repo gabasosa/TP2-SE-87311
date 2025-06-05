@@ -66,12 +66,12 @@
 
 El sistema implementa una **FSM** que evalúa las condiciones cada 2 s y actúa según los siguientes criterios:
 
-| Estado         | Condición de entrada                                   | Duración    | Acción asociada             |
-|----------------|--------------------------------------------------------|-------------|-----------------------------|
-| STAND_BY       | Estado base                                            | -           | Todo apagado                |
-| HUMIDIFYING    | Humedad menor al umbral configurado                    | 10 s        | Humidificador encendido     |
-| COOLING        | Temperatura mayor al umbral configurado               | 10 s        | Peltier/cooler encendido    |
-| VENTILATING    | Cada 5 min o forzado por medio de ISR              | 5 s         | Ventilador encendido        |
+| Estado         | Condición de entrada                                   | Acción asociada             | Tiempo de acción |
+|----------------|--------------------------------------------------------|-----------------------------|---|
+| STAND_BY       | Estado base                                            | Todo apagado                | - |
+| HUMIDIFYING    | Humedad menor al umbral configurado                    | Humidificador encendido     | $60\ s$ |
+| COOLING        | Temperatura mayor al umbral configurado               | Peltier/cooler encendido    | $60\ s$ |
+| VENTILATING    | Cada 5 min mediante el uso de tickers o forzado por medio de ISR | Ventilador encendido       | $30\ s$ |
 
 &emsp;La duración de cada estado es fija, y se retorna automáticamente a `STAND_BY` tras cumplido el tiempo.
 
@@ -86,8 +86,8 @@ El sistema implementa una **FSM** que evalúa las condiciones cada 2 s y actú
 
 &emsp;La interacción con el sistema se realiza a través de:
 
-| **Display gráfico TFT ILI9341** | Permite al usuario visualizar las opciones del sistema. |
-| **Teclado matricial 4x4** | Permite al usuario interactuar con la interfaz gráfica. |
+* **Display gráfico TFT ILI9341**: ermite al usuario visualizar las opciones del sistema.
+* **Teclado matricial 4x4**: permite al usuario interactuar con la interfaz gráfica.
 
 #### Menú principal:
 
@@ -168,7 +168,7 @@ D: Mount/Unmount SD card
 
 ### Implementación
 
-* **PWM:** se utilizó la clase `PwmOut` de Mbed OS para controlar el ángulo del servomotor SG90. Se emplean ciclos de $50~Hz$ con anchos de pulso en alto entre $500~\mu s$ y $2,5~ms$.
+* **PWM:** se utilizó la clase **PwmOut** de Mbed OS para controlar el ángulo del servomotor SG90. Se emplean ciclos de $50\ Hz$ con anchos de pulso en alto entre $500\ \mu s$ y $2,5\ ms$.
 * **Relé:** se controla mediante una salida digital conectada a un GPIO, el cual activa o desactiva la bobina del relé para energizar el ventilador.
 * **Ventilación forzada:** se introdujo una interrupción por software a través de polling sobre la tecla 'C' del teclado matricial. Esta acción permite al usuario activar la ventilación cuando lo considere conveniente.
 * **SD y sistema de archivos:** se utilizó la clase `SDBlockDevice` junto con `FATFileSystem`. Se implementó una función que verifica la presencia de encabezados en el archivo CSV antes de escribir.
