@@ -1,11 +1,17 @@
 #include "menu.h"
-#include "fsm/fsm.h"
-#include "sensors/dht22.h"
-#include "events/event_logger.h"
+#include "fsm.h"
+#include "dht22.h"
+#include "event_logger.h"
 #include "keypad.h"
+#include "sdcard.h"
 #include "tft.h"
 #include <cstdio>
+#include <cstring>
 #include <ctime>
+
+volatile bool forceVentilation;
+Ticker clockTicker;
+volatile bool clockUpdateFlag = false;
 
 static enum MenuState {
     MENU_MAIN,
@@ -15,26 +21,55 @@ static enum MenuState {
 static char rtcInputStr[15];
 static int rtcInputIndex = 0;
 
+void onClockTick() {
+    clockUpdateFlag = true;
+}
+
 void Menu_Init() {
     tft_init();
-    tft_clear(TFT_WHITE); // White background
+    tft_clear(TFT_WHITE);
     menuState = MENU_MAIN;
     Menu_Show();
+
+    clockTicker.attach(&onClockTick, 1s);
+}
+
+void Menu_DrawClock() {
+    time_t now = time(NULL);
+    struct tm* t = localtime(&now);
+
+    char timeStr[9]; // "HH:MM:SS"
+    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", t);
+
+    int x = 254;  // Adjust as needed to fit 8 characters on the screen
+    int y = 230;
+    tft_text(x, y, timeStr, TFT_GREEN, TFT_WHITE);
 }
 
 void Menu_Show() {
+    char D_option[19];
+
+    if (SDCard_IsMounted() == true) {
+        strcpy(D_option, "D: Unmount SD card");
+    }
+    else {
+        strcpy(D_option, "D: Mount SD card");
+    }
+
     tft_clear(TFT_WHITE);
     tft_text(10, 10, (char*) ">>>------ Mushroomer Menu ------<<<", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 30, (char*) " ", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 50, (char*) "1: FSM State", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 70, (char*) "2: Temp & Humidity", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 90, (char*) "3: Save State to Log", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 110, (char*) "4: View Event Log", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 130, (char*) "5: Set RTC Time", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 150, (char*) "6: Show Current Time", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 170, (char*) "A: Set upper temperature threshold", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 190, (char*) "B: Set lower humidity threshold", TFT_BLACK, TFT_WHITE);
-    tft_text(10, 210, (char*) "#: Return to Menu", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 30, (char*) "1: FSM State", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 50, (char*) "2: Temp & Humidity", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 70, (char*) "3: Set RTC Time", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 90, (char*) "4: Show Current Time", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 110, (char*) "5: Save State to Log", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 130, (char*) "6: View Event Log", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 150, (char*) "A: Set upper temperature threshold", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 170, (char*) "B: Set lower humidity threshold", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 190, (char*) "C: Force ventilation", TFT_BLACK, TFT_WHITE);
+    tft_text(10, 210, D_option, TFT_BLACK, TFT_WHITE);
+    tft_text(10, 230, (char*) "#: Return to Menu", TFT_BLACK, TFT_WHITE);
+    Menu_DrawClock(); 
 }
 
 // Helper to safely print to display
@@ -42,6 +77,7 @@ void Display_ResetAndPrint(const char* text) {
     tft_init();
     tft_clear(TFT_WHITE);  // White background
     tft_text(10, 20, (char*)text, TFT_BLACK, TFT_WHITE);  // Black text
+    Menu_DrawClock(); 
 }
 
 void Menu_HandleKey(char key) {
@@ -80,7 +116,23 @@ void Menu_HandleKey(char key) {
             break;
         }
 
-        case '3': {
+        case '3': 
+            Display_ResetAndPrint(">>>---- Setting RTC via keypad ----<<<");
+            menuState = MENU_SET_RTC;
+            break;
+
+        case '4': {
+            Display_ResetAndPrint(">>>---- Current Time ----<<<");
+            time_t currentTime = time(NULL);
+            struct tm* localTime = localtime(&currentTime);
+            char buffer[32];
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localTime);
+            tft_text(10, 50, buffer, TFT_BLACK, TFT_WHITE);
+            tft_text(10, 90, goBack, TFT_BLACK, TFT_WHITE);
+            break;
+        }
+
+        case '5': {
             Display_ResetAndPrint(">>>------ Event Log ------<<<");
             MushroomerState_t state = FSM_GetState();
             float temp = FSM_GetLastTemp();
@@ -92,7 +144,7 @@ void Menu_HandleKey(char key) {
             break;
         }
 
-        case '4': {
+        case '6': {
             Display_ResetAndPrint(">>>------ Event Log ------<<<");
 
             int totalEntries = EventLogger_GetEntryCount();
@@ -126,23 +178,7 @@ void Menu_HandleKey(char key) {
             break;
         }
 
-        case '5':
-            Display_ResetAndPrint(">>>---- Setting RTC via keypad ----<<<");
-            menuState = MENU_SET_RTC;
-            break;
-
-        case '6': {
-            Display_ResetAndPrint(">>>---- Current Time ----<<<");
-            time_t currentTime = time(NULL);
-            struct tm* localTime = localtime(&currentTime);
-            char buffer[32];
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localTime);
-            tft_text(10, 50, buffer, TFT_BLACK, TFT_WHITE);
-            tft_text(10, 90, goBack, TFT_BLACK, TFT_WHITE);
-            break;
-        }
-
-                case 'A': {
+        case 'A': {
             char str[3];
             int strIndex = 0;
 
@@ -187,6 +223,37 @@ void Menu_HandleKey(char key) {
             char msg[32];
             snprintf(msg, sizeof(msg), "Min hum set: %d%%", humThresholdLower);
             Display_ResetAndPrint(msg);
+            break;
+        }
+
+        case 'C': {
+            Display_ResetAndPrint(">>> Force ventilation requested <<<");
+            forceVentilation = true;
+            tft_text(10, 50, (char*)"Fan will turn on soon", TFT_BLACK, TFT_WHITE);
+            tft_text(10, 90, goBack, TFT_BLACK, TFT_WHITE);
+            break;
+        }
+
+        case 'D': {
+            Display_ResetAndPrint(">>> SD Card Action <<<");
+
+            if (SDCard_IsMounted()) {
+                bool success = SDCard_SafeRemove();
+                if (success) {
+                    tft_text(10, 50, (char*)"The SD card can be safely removed now", TFT_BLACK, TFT_WHITE);
+                } else {
+                    tft_text(10, 50, (char*)"Error removing SD card", TFT_RED, TFT_WHITE);
+                }
+            } else {
+                bool success = SDCard_Init();
+                if (success) {
+                    tft_text(10, 50, (char*)"SD card mounted OK", TFT_GREEN, TFT_WHITE);
+                } else {
+                    tft_text(10, 50, (char*)"Mount failed (is it on its place?)", TFT_RED, TFT_WHITE);
+                }
+            }
+
+            tft_text(10, 90, goBack, TFT_BLACK, TFT_WHITE);
             break;
         }
 
