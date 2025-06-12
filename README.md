@@ -55,7 +55,7 @@
 
 ## 1.3 Selección del proyecto
 
-&emsp;Considerando los criterios evaluados en la Tabla 1.3.1, el proyecto **Mushroomer** se presenta como la opción más conveniente, con un puntaje ponderado claramente superior a las otras alternativas. Este resultado se debe a su excelente disponibilidad de hardware, bajo costo relativo, y alto interés personal en temáticas relacionadas con el cultivo controlado y el monitoreo ambiental.
+&emsp;Considerando los criterios evaluados en la Tabla 1.3.1, el proyecto **Mushroomer** se presenta como la opción más conveniente, con un puntaje ponderado claramente superior a las otras alternativas. Este resultado se debe a la disponibilidad del hardware necesario, bajo costo relativo, y alto interés personal en temáticas relacionadas con el cultivo controlado y el monitoreo ambiental.
 
 ### 1.3.1 Diagrama de bloques
 
